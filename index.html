@@ -61,6 +61,10 @@
       }
 
       window.addEventListener('resize', function() {
+        // clear canvas before re-draw
+	var canvas = document.querySelector('canvas');
+	var ctx = canvas.getContext('2d');
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
         draw_bg_box();
       });
       draw_bg_box();
