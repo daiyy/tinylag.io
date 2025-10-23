@@ -63,7 +63,7 @@ function drawPixels(src){
 
 	// Create Canvas Element
 	src.canvas = initializeCanvas(src.target_width, src.target_height);
-	
+
 	// Apply canvas transparency
 	src.canvas.style.opacity = src.options.opacity;
 
@@ -81,8 +81,21 @@ function drawPixels(src){
 //Create Canvas Element
 function initializeCanvas(width, height){
 	var canvas = document.createElement("canvas");
-	canvas.width = width;
-	canvas.height = height;
+
+	const ratio = window.devicePixelRatio || 1;
+	if (ratio !== 1) {
+		canvas.width = width * ratio;
+		canvas.height = height * ratio;
+		canvas.style.width = width + 'px';
+		canvas.style.height = height + 'px';
+		canvas.getContext("2d").scale(ratio, ratio);
+	} else {
+		canvas.width = width;
+		canvas.height = height;
+		canvas.style.width = '';
+		canvas.style.height = '';
+	}
+
 	canvas.style.position = "absolute";
 	canvas.style.top = 0;
 	canvas.style.left = 0;
@@ -100,8 +113,9 @@ function drawOnCanvas(c, opt){
 	//clear canvas
 	ctx.clearRect(0,0,c.width,c.height);
 
-	for(var x = 0; x < c.width; x+= w){
-		for(var y = 0; y < c.height; y+= h){
+	const ratio = window.devicePixelRatio || 1;
+	for(var x = 0; x < c.width/ratio; x+= w){
+		for(var y = 0; y < c.height/ratio; y+= h){
 		  if(calculateProbability(opt.probability, x, y, c))
 			drawPixel(x, y, w, h, null, ctx, opt, 1);
 		}
@@ -110,8 +124,9 @@ function drawOnCanvas(c, opt){
 
 // Calculate Probability
 function calculateProbability(prob, x, y, c){
+	const ratio = window.devicePixelRatio || 1;
 	// Skip based on probability
-	if(Math.random() > prob.x_axis(x, c.width) * prob.y_axis(y, c.height))
+	if(Math.random() > prob.x_axis(x, c.width/ratio) * prob.y_axis(y, c.height/ratio))
 		return false;
 	return true;
 }
@@ -134,41 +149,41 @@ function drawRandomPixel(c, opt, anim_opt){
 	var w = opt.size.width;
 	var h = opt.size.height;
 	var pallete = opt.color_pallete;
+	const ratio = window.devicePixelRatio || 1;
 
 	// get random position
-	var x = Math.floor(Math.random()*c.width); 
-	var y = Math.floor(Math.random()*c.height);
+	var x = Math.floor(Math.random()*(c.width/ratio));
+	var y = Math.floor(Math.random()*(c.height/ratio));
 
 	// round to nearest "grid" position
 	x = Math.round(x/opt.size.width)*opt.size.width;
 	y = Math.round(y/opt.size.height)*opt.size.height;
 
-
-
 	if(calculateProbability(opt.probability, x, y, c)){
 	    var color = opt.color_pallete[Math.floor(Math.random() * opt.color_pallete.length)];
-		replacePixel(x,y,w,h,color, ctx, opt, 0, anim_opt.fade_interval_duration);
+		replacePixel(x,y,w,h,color, ctx, opt, 0, anim_opt.fade_interval_duration, ratio);
 	}
 	//else
 		//ctx.clearRect(x,y,w,h);
 }
 
 // Replace a Pixel
-function replacePixel(x, y, w, h, color, ctx, opt, step, fade_interval_duration){
+function replacePixel(x, y, w, h, color, ctx, opt, step, fade_interval_duration, ratio){
 	
 	if(step<20){
 		window.setTimeout(function(){
-			var imgData = ctx.getImageData(x, y, w, h);
+			// need to manually scale coordinate for getImageData and putImageData API
+			var imgData = ctx.getImageData(x*ratio, y*ratio, w*ratio, h*ratio);
 			for (var i = 0; i < imgData.data.length; i += 4)
 			imgData.data[i+3] = imgData.data[i+3] - 12;
-			ctx.putImageData(imgData, x, y);
-			replacePixel(x, y, w, h, color, ctx, opt, step+1, fade_interval_duration);
+			ctx.putImageData(imgData, x*ratio, y*ratio);
+			replacePixel(x, y, w, h, color, ctx, opt, step+1, fade_interval_duration, ratio);
 		}, fade_interval_duration);
 	}
 	else if(step <41){
 		window.setTimeout(function(){
 			drawPixel(x,y,w,h, color, ctx, opt, (step-20)*0.05);
-			replacePixel(x, y, w, h, color, ctx, opt, step+1, fade_interval_duration);
+			replacePixel(x, y, w, h, color, ctx, opt, step+1, fade_interval_duration, ratio);
 		}, fade_interval_duration);
 	}
 
